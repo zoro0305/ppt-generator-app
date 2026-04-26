@@ -27,7 +27,7 @@ export const THEME = {
 
   // Typography (pt)
   titleSize:   34,
-  bulletSize:  14,
+  bulletSize:  18,
   msLabelSize: 14,
   msDateSize:  12,
   phLabelSize: 14,
