@@ -2,51 +2,55 @@ export const THEME = {
   // Colors
   darkBlue:  "1F3A6E",
   lightBlue: "BDD0E9",
-  dateBlue:  "2F5597",   // date text color (medium blue like reference)
+  dateBlue:  "2F5597",
   black:     "0D0D0D",
   white:     "FFFFFF",
 
-  // Slide dimensions (inches, 16:9 LAYOUT_WIDE)
+  // Slide dimensions (inches, 16:9)
   slideW: 13.33,
   slideH: 7.5,
 
   // Timeline axis
-  axisY:    3.6,    // center y
-  axisLeft: 0.75,   // start x
-  axisRight: 12.7,  // end x (before arrowhead)
-  axisH:    0.20,   // bar height
+  axisY:     3.65,
+  axisLeft:  0.75,
+  axisRight: 12.55,  // right edge of colored bars (arrow tip extends past)
+  axisH:     0.20,
 
-  // Milestone dot (sits on axis, stem goes up)
+  // Milestone dot sits ABOVE the axis bar (stem connects dot-top → label)
   msCircleR: 0.12,
-  msStemH:   0.45,  // stem length above dot
+  msStemH:   0.42,   // from dot top upward to label area
 
   // Phase icon circle (below axis)
   phIconR:   0.30,
-  phStemH:   0.48,  // axis-bottom → icon circle top
+  phStemH:   0.48,   // axis-bottom → icon top (even rows)
+  phStagger: 0.50,   // extra depth for odd-indexed phases
 
-  // Typography (pt) — larger sizes to match reference
+  // Typography
   titleSize:   34,
   bulletSize:  14,
   msLabelSize: 14,
   msDateSize:  12,
-  phLabelSize: 12,
-  phDateSize:  10,
-  phIconSize:  16,  // emoji inside icon circle
+  phLabelSize: 14,   // same as milestone
+  phDateSize:  12,
+  phIconSize:  16,
 
   // Layout anchors
-  titleX: 0.7,
-  titleY: 0.30,
-  bulletX: 0.7,
-  bulletY: 1.00,
-  bulletLineH: 0.42,
+  titleX:      0.70,
+  titleY:      0.28,
+  bulletX:     0.70,
+  bulletY:     1.00,
+  bulletLineH: 0.44,
 } as const;
 
-// Derived constants (computed from THEME so they stay consistent)
-export const AXIS_TOP    = THEME.axisY - THEME.axisH / 2;   // 3.50
-export const AXIS_BOTTOM = THEME.axisY + THEME.axisH / 2;   // 3.70
+export const AXIS_TOP    = THEME.axisY - THEME.axisH / 2;  // 3.55
+export const AXIS_BOTTOM = THEME.axisY + THEME.axisH / 2;  // 3.75
 
-// Milestone: dot sits centered on the axis bar
-export const MS_DOT_Y = THEME.axisY;                        // 3.60
+// Milestone dot: bottom of dot touches the top of the axis bar (floats above)
+export const MS_DOT_Y       = AXIS_TOP - THEME.msCircleR;   // 3.43  (dot center)
+export const MS_STEM_BOTTOM = MS_DOT_Y  - THEME.msCircleR;  // 3.31  (top of dot = stem end)
+export const MS_STEM_TOP    = MS_STEM_BOTTOM - THEME.msStemH; // 2.89
 
-// Phase icon circle center
-export const PH_ICON_Y = AXIS_BOTTOM + THEME.phStemH + THEME.phIconR; // 3.70 + 0.48 + 0.30 = 4.48
+export const MS_DATE_H  = 0.28;
+export const MS_DATE_Y  = MS_STEM_TOP - MS_DATE_H - 0.04;  // 2.57
+export const MS_LABEL_H = 0.35;
+export const MS_LABEL_Y = MS_DATE_Y  - MS_LABEL_H - 0.04;  // 2.18
