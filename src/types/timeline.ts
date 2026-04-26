@@ -7,6 +7,7 @@ export interface Phase {
   label: string;
   start: string;
   end: string;
+  icon?: string; // emoji character, e.g. "🔍"
 }
 
 export interface TimelineInput {

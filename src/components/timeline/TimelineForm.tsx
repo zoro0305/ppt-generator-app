@@ -14,12 +14,12 @@ const DEFAULT_MILESTONES: Milestone[] = [
 ];
 
 const DEFAULT_PHASES: Phase[] = [
-  { label: "Research & Planning", start: "2026/01/01", end: "2026/02/10" },
-  { label: "Requirement Definition", start: "2026/02/11", end: "2026/03/02" },
-  { label: "Design & Prototype", start: "2026/03/03", end: "2026/04/10" },
-  { label: "Development", start: "2026/04/11", end: "2026/05/15" },
-  { label: "Testing & Launch", start: "2026/05/16", end: "2026/06/05" },
-  { label: "Review & Wrap-up", start: "2026/06/06", end: "2026/06/20" },
+  { label: "Research & Planning",    start: "2026/01/01", end: "2026/02/10", icon: "🔍" },
+  { label: "Requirement Definition", start: "2026/02/11", end: "2026/03/02", icon: "📋" },
+  { label: "Design & Prototype",     start: "2026/03/03", end: "2026/04/10", icon: "✏️" },
+  { label: "Development",            start: "2026/04/11", end: "2026/05/15", icon: "⚙️" },
+  { label: "Testing & Launch",       start: "2026/05/16", end: "2026/06/05", icon: "🚀" },
+  { label: "Review & Wrap-up",       start: "2026/06/06", end: "2026/06/20", icon: "🏁" },
 ];
 
 const DEFAULT_BULLETS = [
