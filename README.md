@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 投影片生成器
 
-## Getting Started
+自動產生 `.pptx` 投影片的 Next.js 應用程式，目前支援 **Timeline** 樣式。
 
-First, run the development server:
+---
+
+## 功能
+
+- 首頁列出可用的投影片樣式
+- Timeline：輸入里程碑與階段後下載 `.pptx`
+  - 水平時間軸，依 Phase 交錯深藍 / 淺藍配色
+  - 里程碑（上方實心圓）、階段標籤（置中於各段落）
+  - 相鄰標籤自動交錯排列，避免重疊
+  - 字型大小依元素數量動態調整
+
+---
+
+## 技術堆疊
+
+| 項目 | 版本 |
+|------|------|
+| Next.js | 16.2.4 |
+| React | 19.2.4 |
+| TypeScript | ^5 |
+| Tailwind CSS | ^4 |
+| pptxgenjs | ^3 |
+
+---
+
+## 啟動服務
+
+### 前置需求
+
+- Node.js 18 以上
+- npm 9 以上
+
+### 步驟
 
 ```bash
+# 1. 安裝依賴
+npm install
+
+# 2. 啟動開發伺服器
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+開啟瀏覽器前往 [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 其他指令
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# 型別檢查 + 建置（確認可正確編譯）
+npm run build
 
-## Learn More
+# 在 build 後啟動 production server
+npm start
 
-To learn more about Next.js, take a look at the following resources:
+# Lint 檢查
+npm run lint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 專案結構
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── page.tsx                        # 首頁（樣式選擇）
+│   ├── timeline/
+│   │   └── page.tsx                    # Timeline 功能頁
+│   └── api/
+│       └── generate-timeline/
+│           └── route.ts                # POST API：產生 PPTX 並回傳
+├── components/
+│   └── timeline/
+│       ├── TimelineForm.tsx            # 主表單
+│       ├── BulletFields.tsx            # 說明文字欄位
+│       ├── MilestoneFields.tsx         # 里程碑欄位
+│       ├── PhaseFields.tsx             # 階段欄位
+│       └── DownloadButton.tsx          # 下載按鈕
+├── lib/
+│   └── pptx/
+│       ├── generateTimeline.ts         # 核心繪圖邏輯
+│       ├── timelineLayout.ts           # 日期 → 座標換算
+│       └── theme.ts                    # 顏色、字型、尺寸常數
+└── types/
+    └── timeline.ts                     # 型別定義
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API
+
+### `POST /api/generate-timeline`
+
+**Request Body（JSON）：**
+
+```json
+{
+  "title": "TIMELINE",
+  "bullets": ["說明文字 1", "說明文字 2"],
+  "milestones": [
+    { "label": "Project Kickoff", "date": "2026/01/01" }
+  ],
+  "phases": [
+    { "label": "Research", "start": "2026/01/01", "end": "2026/02/10" }
+  ],
+  "today": "2026-04-26"
+}
+```
+
+**Response：** `application/vnd.openxmlformats-officedocument.presentationml.presentation`（`.pptx` 二進位）
+
+---
+
+## 授權
+
+MIT
