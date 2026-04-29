@@ -1,49 +1,17 @@
 import PptxGenJS from "pptxgenjs";
+import { THEME } from "./theme";
+import { bi, FONT_EN, FONT_ZH } from "./bilingual";
 import {
-  THEME,
-  AXIS_TOP, AXIS_BOTTOM,
-  MS_DOT_Y, MS_STEM_BOTTOM, MS_STEM_TOP,
+  TIMELINE,
+  MS_STAGGER_THRESHOLD, MS_STAGGER_SHIFT,
+  AXIS_TOP,
+  MS_DOT_Y, MS_STEM_TOP,
   MS_DATE_H, MS_DATE_Y, MS_LABEL_H, MS_LABEL_Y,
   PH_ICON_Y, PH_LABEL_Y, PH_DATE_Y,
-} from "./theme";
-import {
-  dateToRatio,
-  ratioToX,
-  getDateBounds,
-  sortedMilestones,
-  sortedPhases,
-} from "./timelineLayout";
+  dateToRatio, ratioToX, getDateBounds,
+  sortedMilestones, sortedPhases,
+} from "@/templates/timeline/layout";
 import type { TimelineInput } from "@/types/timeline";
-
-const FONT_EN = "Arial";
-const FONT_ZH = "Microsoft JhengHei";
-
-const MS_STAGGER_THRESHOLD = 1.4;
-const MS_STAGGER_SHIFT     = 0.45;
-
-type Run = { text: string; options: { fontFace: string } };
-
-function bi(text: string): Run[] {
-  const isCJK = (ch: string) => /[⺀-鿿豈-﫿　-〿]/.test(ch);
-  const runs: Run[] = [];
-  if (!text) return [{ text: "", options: { fontFace: FONT_EN } }];
-
-  let buf = text[0];
-  let cjk = isCJK(text[0]);
-
-  for (let i = 1; i < text.length; i++) {
-    const c = isCJK(text[i]);
-    if (c !== cjk) {
-      runs.push({ text: buf, options: { fontFace: cjk ? FONT_ZH : FONT_EN } });
-      buf = text[i];
-      cjk = c;
-    } else {
-      buf += text[i];
-    }
-  }
-  runs.push({ text: buf, options: { fontFace: cjk ? FONT_ZH : FONT_EN } });
-  return runs;
-}
 
 function fmtRange(start: string, end: string): string {
   const s = start.replace(/-/g, "/");
@@ -70,10 +38,10 @@ export async function generateTimelineClient(input: TimelineInput): Promise<Blob
   const phases     = sortedPhases(input.phases);
   const { min: minDate, max: maxDate } = getDateBounds(milestones, phases);
 
-  const msLabelSz = dyn(THEME.msLabelSize, milestones.length);
-  const msDateSz  = dyn(THEME.msDateSize,  milestones.length);
-  const phLabelSz = dyn(THEME.phLabelSize, phases.length);
-  const phDateSz  = dyn(THEME.phDateSize,  phases.length);
+  const msLabelSz = dyn(TIMELINE.msLabelSize, milestones.length);
+  const msDateSz  = dyn(TIMELINE.msDateSize,  milestones.length);
+  const phLabelSz = dyn(TIMELINE.phLabelSize, phases.length);
+  const phDateSz  = dyn(TIMELINE.phDateSize,  phases.length);
 
   const pptx  = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
@@ -101,21 +69,21 @@ export async function generateTimelineClient(input: TimelineInput): Promise<Blob
   });
 
   slide.addShape(pptx.ShapeType.rect, {
-    x: THEME.axisLeft, y: AXIS_TOP,
-    w: THEME.axisRight - THEME.axisLeft, h: THEME.axisH,
+    x: TIMELINE.axisLeft, y: AXIS_TOP,
+    w: TIMELINE.axisRight - TIMELINE.axisLeft, h: TIMELINE.axisH,
     fill: { color: THEME.lightBlue },
     line: { color: THEME.lightBlue, width: 0 },
   });
 
-  const totalAxisW = THEME.axisRight - THEME.axisLeft;
+  const totalAxisW = TIMELINE.axisRight - TIMELINE.axisLeft;
   const phW = phases.length > 0 ? totalAxisW / phases.length : totalAxisW;
 
   phases.forEach((_, i) => {
-    const x1    = THEME.axisLeft + i * phW;
+    const x1    = TIMELINE.axisLeft + i * phW;
     const color = i % 2 === 0 ? THEME.darkBlue : THEME.lightBlue;
     slide.addShape(pptx.ShapeType.rect, {
       x: x1, y: AXIS_TOP,
-      w: phW, h: THEME.axisH,
+      w: phW, h: TIMELINE.axisH,
       fill: { color },
       line: { color, width: 0 },
     });
@@ -124,25 +92,25 @@ export async function generateTimelineClient(input: TimelineInput): Promise<Blob
   const lastColor = phases.length > 0
     ? (phases.length - 1) % 2 === 0 ? THEME.darkBlue : THEME.lightBlue
     : THEME.lightBlue;
-  const axisThickPt = Math.round(THEME.axisH * 72);
+  const axisThickPt = Math.round(TIMELINE.axisH * 72);
 
   slide.addShape(pptx.ShapeType.line, {
-    x: THEME.axisRight - 0.05,
-    y: THEME.axisY,
+    x: TIMELINE.axisRight - 0.05,
+    y: TIMELINE.axisY,
     w: 0.45,
     h: 0,
     line: { color: lastColor, width: axisThickPt, endArrowType: "triangle" },
   });
 
   phases.forEach((phase, i) => {
-    const cx   = THEME.axisLeft + (i + 0.5) * phW;
+    const cx   = TIMELINE.axisLeft + (i + 0.5) * phW;
     const segW = phW;
 
     const isDark   = i % 2 === 0;
     const iconFill = isDark ? THEME.darkBlue : THEME.lightBlue;
     const iconText = isDark ? THEME.white    : THEME.darkBlue;
 
-    const r = THEME.phIconR;
+    const r = TIMELINE.phIconR;
     slide.addShape(pptx.ShapeType.ellipse, {
       x: cx - r, y: PH_ICON_Y - r, w: r * 2, h: r * 2,
       fill: { color: iconFill },
@@ -152,7 +120,7 @@ export async function generateTimelineClient(input: TimelineInput): Promise<Blob
     if (phase.icon) {
       slide.addText(phase.icon, {
         x: cx - r, y: PH_ICON_Y - r, w: r * 2, h: r * 2,
-        fontSize: THEME.phIconSize,
+        fontSize: TIMELINE.phIconSize,
         color: iconText,
         align: "center", valign: "middle",
         fontFace: FONT_ZH,
@@ -194,11 +162,11 @@ export async function generateTimelineClient(input: TimelineInput): Promise<Blob
 
     slide.addShape(pptx.ShapeType.line, {
       x: cx, y: MS_STEM_TOP - extraUp,
-      w: 0, h: THEME.msStemH + extraUp,
-      line: { color: THEME.black, width: THEME.msStemWidth },
+      w: 0, h: TIMELINE.msStemH + extraUp,
+      line: { color: THEME.black, width: TIMELINE.msStemWidth },
     });
 
-    const r = THEME.msCircleR;
+    const r = TIMELINE.msCircleR;
     slide.addShape(pptx.ShapeType.ellipse, {
       x: cx - r, y: MS_DOT_Y - r, w: r * 2, h: r * 2,
       fill: { color: THEME.black },

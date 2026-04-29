@@ -7,7 +7,7 @@ import {
   getDateBounds,
   sortedMilestones,
   sortedPhases,
-} from "@/lib/pptx/timelineLayout";
+} from "@/templates/timeline/layout";
 import type { TimelineInput } from "@/types/timeline";
 
 // SVG coordinate system: 1 unit = 0.01 inch → viewBox 1333 × 750 (= 13.33" × 7.5")
