@@ -12,7 +12,7 @@ export const comparisonTemplate: SlideTemplate<ComparisonData> = {
   title:       "Comparison",
   description: "方案 / 技術選型比較表",
   emoji:       "⚖️",
-  ready:       false, // flipped to true in Step 11
+  ready:       true,
   defaultData: DEFAULT_DATA,
   validate,
   Form,
