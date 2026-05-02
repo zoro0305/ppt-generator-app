@@ -1,6 +1,6 @@
 "use client";
 
-import type { Milestone } from "@/types/timeline";
+import type { Milestone } from "./schema";
 
 interface Props {
   milestones: Milestone[];
@@ -9,10 +9,7 @@ interface Props {
 
 export default function MilestoneFields({ milestones, onChange }: Props) {
   function update(index: number, field: keyof Milestone, value: string) {
-    const next = milestones.map((m, i) =>
-      i === index ? { ...m, [field]: value } : m
-    );
-    onChange(next);
+    onChange(milestones.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
   }
 
   function add() {

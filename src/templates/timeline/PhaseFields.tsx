@@ -1,6 +1,6 @@
 "use client";
 
-import type { Phase } from "@/types/timeline";
+import type { Phase } from "./schema";
 
 interface Props {
   phases: Phase[];
@@ -26,10 +26,7 @@ export const ICON_OPTIONS = [
 
 export default function PhaseFields({ phases, onChange }: Props) {
   function update(index: number, field: keyof Phase, value: string) {
-    const next = phases.map((p, i) =>
-      i === index ? { ...p, [field]: value } : p
-    );
-    onChange(next);
+    onChange(phases.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
   }
 
   function add() {
@@ -48,7 +45,6 @@ export default function PhaseFields({ phases, onChange }: Props) {
       <div className="space-y-2">
         {phases.map((p, i) => (
           <div key={i} className="flex gap-2 items-center flex-wrap">
-            {/* Icon selector */}
             <select
               className="w-36 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               value={p.icon ?? "📋"}
@@ -60,7 +56,6 @@ export default function PhaseFields({ phases, onChange }: Props) {
                 </option>
               ))}
             </select>
-
             <input
               className="flex-1 min-w-28 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="名稱 Label"

@@ -1,4 +1,4 @@
-import type { Milestone, Phase } from "@/types/timeline";
+import type { Milestone, Phase } from "./schema";
 
 // Timeline-specific geometry (inches) and typography (pt).
 export const TIMELINE = {
