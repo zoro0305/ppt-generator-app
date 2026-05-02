@@ -1,14 +1,13 @@
 export interface ComparisonOption {
   id: string;     // stable internal key referenced by dimensions[].values + winnerId
   label: string;
-  icon?: string;  // emoji
 }
 
 export interface ComparisonDimension {
   id: string;
   label: string;
   values: Record<string, string>; // optionId -> cell text
-  winnerId?: string;              // optionId that wins this dimension; trophy 🏆
+  winnerId?: string;              // optionId that wins this dimension; rendered with a crown
 }
 
 export interface ComparisonData {
@@ -30,9 +29,9 @@ export const DEFAULT_DATA: ComparisonData = {
     "依專案需求選擇最適合的方案",
   ],
   options: [
-    { id: "react",  label: "React",  icon: "⚛️" },
-    { id: "vue",    label: "Vue",    icon: "💚" },
-    { id: "svelte", label: "Svelte", icon: "🔥" },
+    { id: "react",  label: "React"  },
+    { id: "vue",    label: "Vue"    },
+    { id: "svelte", label: "Svelte" },
   ],
   dimensions: [
     { id: "learning",    label: "學習曲線",   values: { react: "中等", vue: "平緩", svelte: "平緩" },     winnerId: "vue" },

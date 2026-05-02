@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { COMPARISON } from "./layout";
+import { Crown } from "./crown";
 import type { ComparisonData } from "./schema";
 
 // SVG coordinate system: 1 unit = 0.01 inch → viewBox 1333 × 750
@@ -11,31 +12,32 @@ const DARK_BLUE  = "#1F3A6E";
 const LIGHT_BLUE = "#BDD0E9";
 const BLACK      = "#111111";
 const WHITE      = "#FFFFFF";
+const BORDER     = "#111111";
+const BORDER_W   = 1;
 
 const SLIDE_W = 1333;
 const SLIDE_H = 750;
 
-// Shared title/bullets positions (mirror src/lib/pptx/theme.ts)
 const TITLE_X       = 70;
 const TITLE_Y       = 28;
 const BULLET_X      = 70;
 const BULLET_Y      = 100;
 const BULLET_LINE_H = 44;
 
-// Comparison-specific (inches × S)
 const TABLE_LEFT       = COMPARISON.marginX        * S;
 const TABLE_W          = SLIDE_W - 2 * TABLE_LEFT;
 const TABLE_MAX_BOTTOM = COMPARISON.tableMaxBottom * S;
 const HEADER_H         = COMPARISON.headerH        * S;
 const DIM_COL_W        = TABLE_W * COMPARISON.dimColRatio;
 const CELL_PAD_X       = COMPARISON.cellPadX      * S;
+const CROWN_W          = COMPARISON.crownW        * S;
+const CROWN_PAD_X      = COMPARISON.crownPadX     * S;
+const CROWN_PAD_Y      = COMPARISON.crownPadY     * S;
 
-// pt → SVG units
 const pt = (p: number) => Math.round((p * S) / 72);
 const FS_TITLE     = pt(34);
 const FS_BULLET    = pt(18);
 const FS_HDR_LABEL = pt(COMPARISON.headerLabelSize);
-const FS_HDR_ICON  = pt(COMPARISON.headerIconSize);
 const FS_DIM_LABEL = pt(COMPARISON.dimLabelSize);
 const FS_CELL      = pt(COMPARISON.cellSize);
 
@@ -44,7 +46,7 @@ interface Props {
 }
 
 export default function ComparisonPreview({ data }: Props) {
-  const { intro, optColW, tableTop, rowH } = useMemo(() => {
+  const { intro, optColW, tableTop, rowH, tableH } = useMemo(() => {
     const intro    = data.intro.filter((b) => b.trim());
     const optColW  = (TABLE_W - DIM_COL_W) / Math.max(data.options.length, 1);
     const tableTop = intro.length > 0
@@ -55,7 +57,7 @@ export default function ComparisonPreview({ data }: Props) {
     const rowH   = data.dimensions.length > 0
       ? bodyH / data.dimensions.length
       : bodyH;
-    return { intro, optColW, tableTop, rowH };
+    return { intro, optColW, tableTop, rowH, tableH };
   }, [data]);
 
   return (
@@ -69,10 +71,8 @@ export default function ComparisonPreview({ data }: Props) {
         style={{ width: "100%", height: "100%", display: "block" }}
         fontFamily="Arial, 'Microsoft JhengHei', sans-serif"
       >
-        {/* Background */}
         <rect x={0} y={0} width={SLIDE_W} height={SLIDE_H} fill={WHITE} />
 
-        {/* Title */}
         <text
           x={TITLE_X} y={TITLE_Y}
           fontSize={FS_TITLE} fontWeight="bold" fill={BLACK}
@@ -81,7 +81,6 @@ export default function ComparisonPreview({ data }: Props) {
           {data.title}
         </text>
 
-        {/* Intro bullets */}
         {intro.map((b, i) => (
           <text
             key={i}
@@ -100,28 +99,18 @@ export default function ComparisonPreview({ data }: Props) {
           fill={DARK_BLUE}
         />
 
-        {/* Header: option icons + labels */}
+        {/* Header labels */}
         {data.options.map((o, i) => {
           const cx = TABLE_LEFT + DIM_COL_W + (i + 0.5) * optColW;
           return (
-            <g key={o.id}>
-              {o.icon && (
-                <text
-                  x={cx} y={tableTop + HEADER_H * 0.32}
-                  textAnchor="middle" dominantBaseline="central"
-                  fontSize={FS_HDR_ICON} fill={WHITE}
-                >
-                  {o.icon}
-                </text>
-              )}
-              <text
-                x={cx} y={tableTop + HEADER_H * 0.78}
-                textAnchor="middle" dominantBaseline="central"
-                fontSize={FS_HDR_LABEL} fontWeight="bold" fill={WHITE}
-              >
-                {o.label}
-              </text>
-            </g>
+            <text
+              key={o.id}
+              x={cx} y={tableTop + HEADER_H / 2}
+              textAnchor="middle" dominantBaseline="central"
+              fontSize={FS_HDR_LABEL} fontWeight="bold" fill={WHITE}
+            >
+              {o.label}
+            </text>
           );
         })}
 
@@ -147,21 +136,67 @@ export default function ComparisonPreview({ data }: Props) {
               </text>
 
               {data.options.map((o, colIdx) => {
-                const cx = TABLE_LEFT + DIM_COL_W + (colIdx + 0.5) * optColW;
+                const cellX = TABLE_LEFT + DIM_COL_W + colIdx * optColW;
+                const cx = cellX + optColW / 2;
                 const value = d.values[o.id] ?? "";
                 const winner = d.winnerId === o.id;
                 return (
-                  <text
-                    key={o.id}
-                    x={cx} y={rowY + rowH / 2}
-                    textAnchor="middle" dominantBaseline="central"
-                    fontSize={FS_CELL} fill={BLACK}
-                  >
-                    {winner ? `🏆 ${value}` : value}
-                  </text>
+                  <g key={o.id}>
+                    <text
+                      x={cx} y={rowY + rowH / 2}
+                      textAnchor="middle" dominantBaseline="central"
+                      fontSize={FS_CELL} fill={BLACK}
+                    >
+                      {value}
+                    </text>
+                    {winner && (
+                      <Crown
+                        x={cellX + optColW - CROWN_W - CROWN_PAD_X}
+                        y={rowY + CROWN_PAD_Y}
+                        size={CROWN_W}
+                      />
+                    )}
+                  </g>
                 );
               })}
             </g>
+          );
+        })}
+
+        {/* Grid lines on top */}
+        <rect
+          x={TABLE_LEFT} y={tableTop}
+          width={TABLE_W} height={tableH}
+          fill="none" stroke={BORDER} strokeWidth={BORDER_W * 1.5}
+        />
+        <line
+          x1={TABLE_LEFT} y1={tableTop + HEADER_H}
+          x2={TABLE_LEFT + TABLE_W} y2={tableTop + HEADER_H}
+          stroke={BORDER} strokeWidth={BORDER_W}
+        />
+        {data.dimensions.slice(1).map((_, i) => {
+          const y = tableTop + HEADER_H + (i + 1) * rowH;
+          return (
+            <line key={`h-${i}`}
+              x1={TABLE_LEFT} y1={y}
+              x2={TABLE_LEFT + TABLE_W} y2={y}
+              stroke={BORDER} strokeWidth={BORDER_W}
+            />
+          );
+        })}
+        <line
+          x1={TABLE_LEFT + DIM_COL_W} y1={tableTop}
+          x2={TABLE_LEFT + DIM_COL_W} y2={tableTop + tableH}
+          stroke={BORDER} strokeWidth={BORDER_W}
+        />
+        {data.options.slice(1).map((_, i) => {
+          const x = TABLE_LEFT + DIM_COL_W + (i + 1) * optColW;
+          return (
+            <line key={`v-${i}`}
+              x1={x} y1={tableTop}
+              x2={x} y2={tableTop + tableH}
+              stroke={BORDER} strokeWidth={BORDER_W}
+            />
           );
         })}
       </svg>

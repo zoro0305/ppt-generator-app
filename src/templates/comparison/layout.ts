@@ -8,14 +8,21 @@ export const COMPARISON = {
   dimColRatio: 0.22,
 
   // Row heights (inches)
-  headerH: 0.85,
+  headerH: 0.70,
 
   // Typography (pt)
-  headerLabelSize: 16,
-  headerIconSize:  28,
+  headerLabelSize: 18,
   dimLabelSize:    14,
   cellSize:        13,
 
   // Padding inside cells (inches)
   cellPadX: 0.10,
+
+  // Grid border line width (pt for PPTX, also used as SVG stroke-width baseline)
+  borderPt: 0.75,
+
+  // Crown icon (inches) shown on the winning cell
+  crownW: 0.34,
+  crownPadX: 0.06,
+  crownPadY: 0.06,
 } as const;
