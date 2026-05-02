@@ -1,6 +1,9 @@
 "use client";
 
-import type { ComparisonData } from "./schema";
+import type { ComparisonData, ComparisonOption } from "./schema";
+import BulletFields from "@/components/common/BulletFields";
+import OptionFields from "./OptionFields";
+import DimensionFields from "./DimensionFields";
 
 interface Props {
   data: ComparisonData;
@@ -8,12 +11,24 @@ interface Props {
 }
 
 export default function ComparisonFormFields({ data, onChange }: Props) {
+  // When options change, sync each dimension's values + winnerId so the data
+  // never references a deleted option and new options always have a (blank) cell.
+  function setOptions(newOptions: ComparisonOption[]) {
+    const validIds = new Set(newOptions.map((o) => o.id));
+    const syncedDimensions = data.dimensions.map((d) => {
+      const values: Record<string, string> = {};
+      for (const o of newOptions) {
+        values[o.id] = d.values[o.id] ?? "";
+      }
+      const winnerId = d.winnerId && validIds.has(d.winnerId) ? d.winnerId : undefined;
+      return { ...d, values, winnerId };
+    });
+    onChange({ ...data, options: newOptions, dimensions: syncedDimensions });
+  }
+
   return (
-    <div className="space-y-4">
+    <>
       <h1 className="text-xl font-bold text-slate-800">Comparison 投影片</h1>
-      <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
-        🚧 此版型仍在開發中，編輯介面尚未完成。
-      </p>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -23,8 +38,22 @@ export default function ComparisonFormFields({ data, onChange }: Props) {
           className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={data.title}
           onChange={(e) => onChange({ ...data, title: e.target.value })}
+          placeholder="比較表標題"
         />
       </div>
-    </div>
+
+      <BulletFields
+        bullets={data.intro}
+        onChange={(v) => onChange({ ...data, intro: v })}
+      />
+
+      <OptionFields options={data.options} onChange={setOptions} />
+
+      <DimensionFields
+        options={data.options}
+        dimensions={data.dimensions}
+        onChange={(v) => onChange({ ...data, dimensions: v })}
+      />
+    </>
   );
 }
