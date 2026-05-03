@@ -1,13 +1,14 @@
-// Reusable crown icon — single source of truth for SVG preview and PPTX.
-// ViewBox 28×20; designed at this ratio so callers can scale by width and
-// compute height via crownHeight().
+// Crown icon — flat gold, 3-peak classic crown matching reference design.
+// ViewBox 40×26; callers scale by width, compute height via crownHeight().
 
-export const CROWN_VIEWBOX = { w: 28, h: 20 };
+import { useId } from "react";
+
+export const CROWN_VIEWBOX = { w: 40, h: 26 };
 
 interface CrownProps {
   x: number;
   y: number;
-  size: number; // width in SVG-unit space; height auto-scales
+  size: number; // width in target SVG units; height auto-scales
 }
 
 export function crownHeight(size: number): number {
@@ -15,76 +16,99 @@ export function crownHeight(size: number): number {
 }
 
 export function Crown({ x, y, size }: CrownProps) {
+  const id    = useId();
   const scale = size / CROWN_VIEWBOX.w;
+  const gBody = `crown-body-${id}`;
+  const gBand = `crown-band-${id}`;
+
   return (
     <g transform={`translate(${x}, ${y}) scale(${scale})`}>
       <defs>
-        <linearGradient id="cg-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#FFE566" />
-          <stop offset="55%"  stopColor="#E8A020" />
-          <stop offset="100%" stopColor="#B86800" />
+        {/* Body: bright gold at top, warm mid, darker base */}
+        <linearGradient id={gBody} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#F5D060" />
+          <stop offset="45%"  stopColor="#D4A020" />
+          <stop offset="100%" stopColor="#B07010" />
         </linearGradient>
-        <linearGradient id="cg-base" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#D4820C" />
-          <stop offset="100%" stopColor="#8B4800" />
+        {/* Base band: slightly deeper gold */}
+        <linearGradient id={gBand} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#C89018" />
+          <stop offset="100%" stopColor="#8B5C08" />
         </linearGradient>
       </defs>
 
-      {/* Crown body — 3 peaks, center tallest */}
+      {/*
+        Crown body — 3 peaks, center tallest.
+        Outer walls rise then angle inward before the first peak.
+        Path traces: bottom-left → left wall → left angle → left peak base →
+        valley → center peak base → valley → right peak base → right angle →
+        right wall → bottom-right → close.
+        Circles at each peak tip sit on top (drawn after body).
+      */}
       <path
-        d="M 2 18 L 4 9 L 10 14 L 14 4 L 18 14 L 24 9 L 26 18 Z"
-        fill="url(#cg-body)"
-        stroke="#7A4800"
+        d={[
+          "M 1 25",       // bottom-left
+          "L 1 15",       // up left wall
+          "L 6 20",       // angle inward
+          "L 11 9",       // rise to left peak shoulder
+          "L 17 17",      // down to left valley
+          "L 20 6",       // rise to center peak shoulder
+          "L 23 17",      // down to right valley
+          "L 29 9",       // rise to right peak shoulder
+          "L 34 20",      // angle inward
+          "L 39 15",      // up right wall
+          "L 39 25",      // bottom-right
+          "Z",
+        ].join(" ")}
+        fill={`url(#${gBody})`}
+        stroke="#9B6E00"
         strokeWidth={0.6}
         strokeLinejoin="round"
       />
-      {/* Base band */}
+
+      {/* Base band — separates crown body from border edge */}
       <rect
-        x={2} y={15.5} width={24} height={2.5} rx={0.5}
-        fill="url(#cg-base)"
-        stroke="#7A4800" strokeWidth={0.5}
+        x={1} y={21.5} width={38} height={3.5} rx={0.8}
+        fill={`url(#${gBand})`}
+        stroke="#9B6E00" strokeWidth={0.5}
       />
-      {/* Highlight shimmer */}
-      <ellipse cx={13} cy={13} rx={4.5} ry={1.8} fill="#FFF9C4" opacity={0.4} />
 
-      {/* Left gem — ruby */}
-      <circle cx={4}  cy={9} r={1.8} fill="#E03030" stroke="#7A0000" strokeWidth={0.3} />
-      <circle cx={4.6} cy={8.4} r={0.5} fill="white" opacity={0.55} />
+      {/* Peak balls — left, center (largest), right */}
+      <circle cx={11} cy={9}  r={3.0} fill={`url(#${gBody})`} stroke="#9B6E00" strokeWidth={0.5} />
+      <circle cx={20} cy={6}  r={3.5} fill={`url(#${gBody})`} stroke="#9B6E00" strokeWidth={0.5} />
+      <circle cx={29} cy={9}  r={3.0} fill={`url(#${gBody})`} stroke="#9B6E00" strokeWidth={0.5} />
 
-      {/* Center gem — sapphire (largest) */}
-      <circle cx={14} cy={4} r={2.2} fill="#4FC3F7" stroke="#0070B0" strokeWidth={0.3} />
-      <circle cx={14.7} cy={3.3} r={0.6} fill="white" opacity={0.55} />
-
-      {/* Right gem — emerald */}
-      <circle cx={24} cy={9} r={1.8} fill="#43A047" stroke="#1B5E20" strokeWidth={0.3} />
-      <circle cx={24.6} cy={8.4} r={0.5} fill="white" opacity={0.55} />
+      {/* Specular highlights on each ball */}
+      <circle cx={9.8}  cy={7.8}  r={1.0} fill="white" opacity={0.45} />
+      <circle cx={18.5} cy={4.5}  r={1.2} fill="white" opacity={0.45} />
+      <circle cx={27.8} cy={7.8}  r={1.0} fill="white" opacity={0.45} />
     </g>
   );
 }
 
 // ── PPTX embed ────────────────────────────────────────────────────────────────
-// Raw SVG for base64 embedding via pptxgenjs addImage().
-const CROWN_SVG_RAW = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 20">
+const CROWN_SVG_RAW = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 26">
   <defs>
     <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FFE566"/>
-      <stop offset="55%" stop-color="#E8A020"/>
-      <stop offset="100%" stop-color="#B86800"/>
+      <stop offset="0%" stop-color="#F5D060"/>
+      <stop offset="45%" stop-color="#D4A020"/>
+      <stop offset="100%" stop-color="#B07010"/>
     </linearGradient>
     <linearGradient id="gbb" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#D4820C"/>
-      <stop offset="100%" stop-color="#8B4800"/>
+      <stop offset="0%" stop-color="#C89018"/>
+      <stop offset="100%" stop-color="#8B5C08"/>
     </linearGradient>
   </defs>
-  <path d="M 2 18 L 4 9 L 10 14 L 14 4 L 18 14 L 24 9 L 26 18 Z" fill="url(#gb)" stroke="#7A4800" stroke-width="0.6" stroke-linejoin="round"/>
-  <rect x="2" y="15.5" width="24" height="2.5" rx="0.5" fill="url(#gbb)" stroke="#7A4800" stroke-width="0.5"/>
-  <ellipse cx="13" cy="13" rx="4.5" ry="1.8" fill="#FFF9C4" opacity="0.4"/>
-  <circle cx="4" cy="9" r="1.8" fill="#E03030" stroke="#7A0000" stroke-width="0.3"/>
-  <circle cx="4.6" cy="8.4" r="0.5" fill="white" opacity="0.55"/>
-  <circle cx="14" cy="4" r="2.2" fill="#4FC3F7" stroke="#0070B0" stroke-width="0.3"/>
-  <circle cx="14.7" cy="3.3" r="0.6" fill="white" opacity="0.55"/>
-  <circle cx="24" cy="9" r="1.8" fill="#43A047" stroke="#1B5E20" stroke-width="0.3"/>
-  <circle cx="24.6" cy="8.4" r="0.5" fill="white" opacity="0.55"/>
+  <path d="M 1 25 L 1 15 L 6 20 L 11 9 L 17 17 L 20 6 L 23 17 L 29 9 L 34 20 L 39 15 L 39 25 Z"
+    fill="url(#gb)" stroke="#9B6E00" stroke-width="0.6" stroke-linejoin="round"/>
+  <rect x="1" y="21.5" width="38" height="3.5" rx="0.8"
+    fill="url(#gbb)" stroke="#9B6E00" stroke-width="0.5"/>
+  <circle cx="11" cy="9"  r="3.0" fill="url(#gb)" stroke="#9B6E00" stroke-width="0.5"/>
+  <circle cx="20" cy="6"  r="3.5" fill="url(#gb)" stroke="#9B6E00" stroke-width="0.5"/>
+  <circle cx="29" cy="9"  r="3.0" fill="url(#gb)" stroke="#9B6E00" stroke-width="0.5"/>
+  <circle cx="9.8"  cy="7.8"  r="1.0" fill="white" opacity="0.45"/>
+  <circle cx="18.5" cy="4.5"  r="1.2" fill="white" opacity="0.45"/>
+  <circle cx="27.8" cy="7.8"  r="1.0" fill="white" opacity="0.45"/>
 </svg>`;
 
 function toBase64(s: string): string {
