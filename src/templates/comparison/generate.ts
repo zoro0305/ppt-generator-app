@@ -5,6 +5,10 @@ import { COMPARISON } from "./layout";
 import { CROWN_DATA_URI, CROWN_VIEWBOX } from "./crown";
 import type { ComparisonData } from "./schema";
 
+// Slightly lighter blue for alternating rows — matches Preview.tsx LIGHT_BLUE
+const LIGHT_BLUE_ALT = "D6E4F4";
+const GRID_COLOR     = "8DA3BC";
+
 export async function generate(data: ComparisonData): Promise<Blob> {
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
@@ -17,7 +21,7 @@ export async function generate(data: ComparisonData): Promise<Blob> {
     fontSize: THEME.titleSize, bold: true, color: THEME.black,
   });
 
-  // ── Intro bullets (optional) ─────────────────────────────────────────────
+  // ── Intro bullets ────────────────────────────────────────────────────────
   const intro = data.intro.filter((b) => b.trim());
   intro.forEach((b, i) => {
     slide.addText(
@@ -45,9 +49,10 @@ export async function generate(data: ComparisonData): Promise<Blob> {
   const dimColW = tableW * COMPARISON.dimColRatio;
   const optColW = (tableW - dimColW) / data.options.length;
 
-  const border    = { color: THEME.black, width: COMPARISON.borderPt };
+  const gridLine  = { color: GRID_COLOR, width: COMPARISON.borderPt };
+  const outerLine = { color: THEME.darkBlue, width: COMPARISON.borderPt * 1.5 };
   const noLine    = { color: THEME.darkBlue, width: 0 };
-  const noLineLB  = { color: THEME.lightBlue, width: 0 };
+  const noLineAlt = { color: LIGHT_BLUE_ALT, width: 0 };
 
   // ── Header background ────────────────────────────────────────────────────
   slide.addShape(pptx.ShapeType.rect, {
@@ -56,7 +61,7 @@ export async function generate(data: ComparisonData): Promise<Blob> {
     line: noLine,
   });
 
-  // ── Header: option labels (no icon) ──────────────────────────────────────
+  // ── Header labels (centered, white bold) ─────────────────────────────────
   data.options.forEach((o, i) => {
     const cellX = tableLeft + dimColW + i * optColW;
     slide.addText(bi(o.label), {
@@ -74,23 +79,24 @@ export async function generate(data: ComparisonData): Promise<Blob> {
     if (rowIdx % 2 === 1) {
       slide.addShape(pptx.ShapeType.rect, {
         x: tableLeft, y: rowY, w: tableW, h: rowH,
-        fill: { color: THEME.lightBlue },
-        line: noLineLB,
+        fill: { color: LIGHT_BLUE_ALT },
+        line: noLineAlt,
       });
     }
 
+    // Dimension label — dark blue bold (left column)
     slide.addText(bi(d.label), {
       x: tableLeft + COMPARISON.cellPadX, y: rowY,
       w: dimColW - 2 * COMPARISON.cellPadX, h: rowH,
       fontSize: COMPARISON.dimLabelSize, bold: true,
-      color: THEME.black,
+      color: THEME.darkBlue,
       align: "left", valign: "middle",
     });
 
     data.options.forEach((o, colIdx) => {
       const cellX = tableLeft + dimColW + colIdx * optColW;
       const value = d.values[o.id] ?? "";
-      const isWinner = d.winnerId === o.id;
+      const isWinner = d.winnerIds?.includes(o.id) ?? false;
 
       slide.addText(bi(value), {
         x: cellX + COMPARISON.cellPadX, y: rowY,
@@ -113,39 +119,36 @@ export async function generate(data: ComparisonData): Promise<Blob> {
     });
   });
 
-  // ── Grid lines (drawn last so they sit on top of fills) ──────────────────
-  const outerBorder = { color: THEME.black, width: COMPARISON.borderPt * 1.5 };
-  // Outer frame: top, bottom, left, right
-  slide.addShape(pptx.ShapeType.line, { x: tableLeft, y: tableTop, w: tableW, h: 0, line: outerBorder });
-  slide.addShape(pptx.ShapeType.line, { x: tableLeft, y: tableTop + tableH, w: tableW, h: 0, line: outerBorder });
-  slide.addShape(pptx.ShapeType.line, { x: tableLeft, y: tableTop, w: 0, h: tableH, line: outerBorder });
-  slide.addShape(pptx.ShapeType.line, { x: tableLeft + tableW, y: tableTop, w: 0, h: tableH, line: outerBorder });
-  // Header bottom
+  // ── Grid lines ───────────────────────────────────────────────────────────
+  // Internal: header bottom
   slide.addShape(pptx.ShapeType.line, {
     x: tableLeft, y: tableTop + headerH, w: tableW, h: 0,
-    line: border,
+    line: gridLine,
   });
-  // Horizontal row separators
+  // Internal: horizontal row separators
   for (let i = 1; i < data.dimensions.length; i++) {
-    const y = tableTop + headerH + i * rowH;
     slide.addShape(pptx.ShapeType.line, {
-      x: tableLeft, y, w: tableW, h: 0,
-      line: border,
+      x: tableLeft, y: tableTop + headerH + i * rowH, w: tableW, h: 0,
+      line: gridLine,
     });
   }
-  // Vertical: dim/option boundary
+  // Internal: vertical dim/option boundary
   slide.addShape(pptx.ShapeType.line, {
     x: tableLeft + dimColW, y: tableTop, w: 0, h: tableH,
-    line: border,
+    line: gridLine,
   });
-  // Vertical: between option columns
+  // Internal: vertical between option columns
   for (let i = 1; i < data.options.length; i++) {
-    const x = tableLeft + dimColW + i * optColW;
     slide.addShape(pptx.ShapeType.line, {
-      x, y: tableTop, w: 0, h: tableH,
-      line: border,
+      x: tableLeft + dimColW + i * optColW, y: tableTop, w: 0, h: tableH,
+      line: gridLine,
     });
   }
+  // Outer frame: top, bottom, left, right (dark blue, slightly thicker)
+  slide.addShape(pptx.ShapeType.line, { x: tableLeft,           y: tableTop,          w: tableW, h: 0,      line: outerLine });
+  slide.addShape(pptx.ShapeType.line, { x: tableLeft,           y: tableTop + tableH, w: tableW, h: 0,      line: outerLine });
+  slide.addShape(pptx.ShapeType.line, { x: tableLeft,           y: tableTop,          w: 0,      h: tableH, line: outerLine });
+  slide.addShape(pptx.ShapeType.line, { x: tableLeft + tableW,  y: tableTop,          w: 0,      h: tableH, line: outerLine });
 
   return await pptx.write({ outputType: "blob" }) as Blob;
 }

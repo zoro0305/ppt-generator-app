@@ -1,5 +1,5 @@
 export interface ComparisonOption {
-  id: string;     // stable internal key referenced by dimensions[].values + winnerId
+  id: string;     // stable internal key referenced by dimensions[].values + winnerIds
   label: string;
 }
 
@@ -7,7 +7,7 @@ export interface ComparisonDimension {
   id: string;
   label: string;
   values: Record<string, string>; // optionId -> cell text
-  winnerId?: string;              // optionId that wins this dimension; rendered with a crown
+  winnerIds?: string[];            // optionIds that win this dimension; rendered with crown
 }
 
 export interface ComparisonData {
@@ -34,11 +34,11 @@ export const DEFAULT_DATA: ComparisonData = {
     { id: "svelte", label: "Svelte" },
   ],
   dimensions: [
-    { id: "learning",    label: "學習曲線",   values: { react: "中等", vue: "平緩", svelte: "平緩" },     winnerId: "vue" },
-    { id: "ecosystem",   label: "生態系",     values: { react: "最大", vue: "完整", svelte: "成長中" },   winnerId: "react" },
-    { id: "performance", label: "效能",       values: { react: "良好", vue: "優秀", svelte: "卓越" },     winnerId: "svelte" },
-    { id: "hiring",      label: "招募難度",   values: { react: "容易", vue: "中等", svelte: "困難" },     winnerId: "react" },
-    { id: "enterprise",  label: "企業採用度", values: { react: "高",   vue: "中",   svelte: "低" },       winnerId: "react" },
+    { id: "learning",    label: "學習曲線",   values: { react: "中等", vue: "平緩", svelte: "平緩" },     winnerIds: ["vue", "svelte"] },
+    { id: "ecosystem",   label: "生態系",     values: { react: "最大", vue: "完整", svelte: "成長中" },   winnerIds: ["react"] },
+    { id: "performance", label: "效能",       values: { react: "良好", vue: "優秀", svelte: "卓越" },     winnerIds: ["svelte"] },
+    { id: "hiring",      label: "招募難度",   values: { react: "容易", vue: "中等", svelte: "困難" },     winnerIds: ["react"] },
+    { id: "enterprise",  label: "企業採用度", values: { react: "高",   vue: "中",   svelte: "低" },       winnerIds: ["react"] },
   ],
 };
 
@@ -69,8 +69,10 @@ export function validate(data: ComparisonData): string | null {
       if (v == null || !v.trim())
         return `「${d.label}」的「${o.label}」欄位尚未填寫`;
     }
-    if (d.winnerId && !optionIds.has(d.winnerId))
-      return `「${d.label}」的勝者指向不存在的選項`;
+    for (const wid of d.winnerIds ?? []) {
+      if (!optionIds.has(wid))
+        return `「${d.label}」的勝者指向不存在的選項`;
+    }
   }
 
   return null;

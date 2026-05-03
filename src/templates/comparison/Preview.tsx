@@ -9,11 +9,11 @@ import type { ComparisonData } from "./schema";
 const S = 100;
 
 const DARK_BLUE  = "#1F3A6E";
-const LIGHT_BLUE = "#BDD0E9";
+const LIGHT_BLUE = "#D6E4F4";  // slightly lighter for cleaner look
 const BLACK      = "#111111";
 const WHITE      = "#FFFFFF";
-const BORDER     = "#111111";
-const BORDER_W   = 1;
+const GRID_COLOR = "#8DA3BC";  // subtle blue-gray grid lines
+const FRAME_R    = 10;         // SVG units — rounded corner radius
 
 const SLIDE_W = 1333;
 const SLIDE_H = 750;
@@ -33,6 +33,7 @@ const CELL_PAD_X       = COMPARISON.cellPadX      * S;
 const CROWN_W          = COMPARISON.crownW        * S;
 const CROWN_PAD_X      = COMPARISON.crownPadX     * S;
 const CROWN_PAD_Y      = COMPARISON.crownPadY     * S;
+const GRID_W           = 0.7;  // SVG stroke-width for internal grid
 
 const pt = (p: number) => Math.round((p * S) / 72);
 const FS_TITLE     = pt(34);
@@ -60,6 +61,8 @@ export default function ComparisonPreview({ data }: Props) {
     return { intro, optColW, tableTop, rowH, tableH };
   }, [data]);
 
+  const clipId = "table-clip";
+
   return (
     <div
       className="w-full overflow-hidden rounded-lg shadow-lg"
@@ -71,8 +74,20 @@ export default function ComparisonPreview({ data }: Props) {
         style={{ width: "100%", height: "100%", display: "block" }}
         fontFamily="Arial, 'Microsoft JhengHei', sans-serif"
       >
+        <defs>
+          {/* Clip all table fills to rounded rect so nothing overflows corners */}
+          <clipPath id={clipId}>
+            <rect
+              x={TABLE_LEFT} y={tableTop}
+              width={TABLE_W} height={tableH}
+              rx={FRAME_R} ry={FRAME_R}
+            />
+          </clipPath>
+        </defs>
+
         <rect x={0} y={0} width={SLIDE_W} height={SLIDE_H} fill={WHITE} />
 
+        {/* Title */}
         <text
           x={TITLE_X} y={TITLE_Y}
           fontSize={FS_TITLE} fontWeight="bold" fill={BLACK}
@@ -81,6 +96,7 @@ export default function ComparisonPreview({ data }: Props) {
           {data.title}
         </text>
 
+        {/* Intro bullets */}
         {intro.map((b, i) => (
           <text
             key={i}
@@ -92,12 +108,34 @@ export default function ComparisonPreview({ data }: Props) {
           </text>
         ))}
 
-        {/* Header background */}
-        <rect
-          x={TABLE_LEFT} y={tableTop}
-          width={TABLE_W} height={HEADER_H}
-          fill={DARK_BLUE}
-        />
+        {/* Table — all fills clipped to rounded rect */}
+        <g clipPath={`url(#${clipId})`}>
+          {/* White base */}
+          <rect
+            x={TABLE_LEFT} y={tableTop}
+            width={TABLE_W} height={tableH}
+            fill={WHITE}
+          />
+
+          {/* Header background */}
+          <rect
+            x={TABLE_LEFT} y={tableTop}
+            width={TABLE_W} height={HEADER_H}
+            fill={DARK_BLUE}
+          />
+
+          {/* Alternating row fills */}
+          {data.dimensions.map((d, rowIdx) => {
+            const rowY = tableTop + HEADER_H + rowIdx * rowH;
+            return rowIdx % 2 === 1 ? (
+              <rect key={d.id}
+                x={TABLE_LEFT} y={rowY}
+                width={TABLE_W} height={rowH}
+                fill={LIGHT_BLUE}
+              />
+            ) : null;
+          })}
+        </g>
 
         {/* Header labels */}
         {data.options.map((o, i) => {
@@ -114,23 +152,16 @@ export default function ComparisonPreview({ data }: Props) {
           );
         })}
 
-        {/* Body rows */}
+        {/* Body rows: dimension labels + cells + crowns */}
         {data.dimensions.map((d, rowIdx) => {
           const rowY = tableTop + HEADER_H + rowIdx * rowH;
           return (
             <g key={d.id}>
-              {rowIdx % 2 === 1 && (
-                <rect
-                  x={TABLE_LEFT} y={rowY}
-                  width={TABLE_W} height={rowH}
-                  fill={LIGHT_BLUE}
-                />
-              )}
-
+              {/* Dimension label — dark blue bold */}
               <text
                 x={TABLE_LEFT + CELL_PAD_X} y={rowY + rowH / 2}
                 textAnchor="start" dominantBaseline="central"
-                fontSize={FS_DIM_LABEL} fontWeight="bold" fill={BLACK}
+                fontSize={FS_DIM_LABEL} fontWeight="bold" fill={DARK_BLUE}
               >
                 {d.label}
               </text>
@@ -139,7 +170,7 @@ export default function ComparisonPreview({ data }: Props) {
                 const cellX = TABLE_LEFT + DIM_COL_W + colIdx * optColW;
                 const cx = cellX + optColW / 2;
                 const value = d.values[o.id] ?? "";
-                const winner = d.winnerId === o.id;
+                const isWinner = d.winnerIds?.includes(o.id) ?? false;
                 return (
                   <g key={o.id}>
                     <text
@@ -149,7 +180,7 @@ export default function ComparisonPreview({ data }: Props) {
                     >
                       {value}
                     </text>
-                    {winner && (
+                    {isWinner && (
                       <Crown
                         x={cellX + optColW - CROWN_W - CROWN_PAD_X}
                         y={rowY + CROWN_PAD_Y}
@@ -163,42 +194,52 @@ export default function ComparisonPreview({ data }: Props) {
           );
         })}
 
-        {/* Grid lines on top */}
+        {/* Grid lines — drawn above fills but clipped so they don't bleed outside rounded frame */}
+        <g clipPath={`url(#${clipId})`}>
+          {/* Header bottom */}
+          <line
+            x1={TABLE_LEFT} y1={tableTop + HEADER_H}
+            x2={TABLE_LEFT + TABLE_W} y2={tableTop + HEADER_H}
+            stroke={GRID_COLOR} strokeWidth={GRID_W}
+          />
+          {/* Horizontal row separators */}
+          {data.dimensions.slice(1).map((_, i) => {
+            const y = tableTop + HEADER_H + (i + 1) * rowH;
+            return (
+              <line key={`h-${i}`}
+                x1={TABLE_LEFT} y1={y}
+                x2={TABLE_LEFT + TABLE_W} y2={y}
+                stroke={GRID_COLOR} strokeWidth={GRID_W}
+              />
+            );
+          })}
+          {/* Vertical: dim column boundary */}
+          <line
+            x1={TABLE_LEFT + DIM_COL_W} y1={tableTop}
+            x2={TABLE_LEFT + DIM_COL_W} y2={tableTop + tableH}
+            stroke={GRID_COLOR} strokeWidth={GRID_W}
+          />
+          {/* Vertical: between option columns */}
+          {data.options.slice(1).map((_, i) => {
+            const x = TABLE_LEFT + DIM_COL_W + (i + 1) * optColW;
+            return (
+              <line key={`v-${i}`}
+                x1={x} y1={tableTop}
+                x2={x} y2={tableTop + tableH}
+                stroke={GRID_COLOR} strokeWidth={GRID_W}
+              />
+            );
+          })}
+        </g>
+
+        {/* Outer frame — rounded rect, drawn last as a crisp border */}
         <rect
           x={TABLE_LEFT} y={tableTop}
           width={TABLE_W} height={tableH}
-          fill="none" stroke={BORDER} strokeWidth={BORDER_W * 1.5}
+          rx={FRAME_R} ry={FRAME_R}
+          fill="none"
+          stroke={DARK_BLUE} strokeWidth={1.5}
         />
-        <line
-          x1={TABLE_LEFT} y1={tableTop + HEADER_H}
-          x2={TABLE_LEFT + TABLE_W} y2={tableTop + HEADER_H}
-          stroke={BORDER} strokeWidth={BORDER_W}
-        />
-        {data.dimensions.slice(1).map((_, i) => {
-          const y = tableTop + HEADER_H + (i + 1) * rowH;
-          return (
-            <line key={`h-${i}`}
-              x1={TABLE_LEFT} y1={y}
-              x2={TABLE_LEFT + TABLE_W} y2={y}
-              stroke={BORDER} strokeWidth={BORDER_W}
-            />
-          );
-        })}
-        <line
-          x1={TABLE_LEFT + DIM_COL_W} y1={tableTop}
-          x2={TABLE_LEFT + DIM_COL_W} y2={tableTop + tableH}
-          stroke={BORDER} strokeWidth={BORDER_W}
-        />
-        {data.options.slice(1).map((_, i) => {
-          const x = TABLE_LEFT + DIM_COL_W + (i + 1) * optColW;
-          return (
-            <line key={`v-${i}`}
-              x1={x} y1={tableTop}
-              x2={x} y2={tableTop + tableH}
-              stroke={BORDER} strokeWidth={BORDER_W}
-            />
-          );
-        })}
       </svg>
     </div>
   );

@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function ComparisonFormFields({ data, onChange }: Props) {
-  // When options change, sync each dimension's values + winnerId so the data
+  // When options change, sync each dimension's values + winnerIds so the data
   // never references a deleted option and new options always have a (blank) cell.
   function setOptions(newOptions: ComparisonOption[]) {
     const validIds = new Set(newOptions.map((o) => o.id));
@@ -20,8 +20,8 @@ export default function ComparisonFormFields({ data, onChange }: Props) {
       for (const o of newOptions) {
         values[o.id] = d.values[o.id] ?? "";
       }
-      const winnerId = d.winnerId && validIds.has(d.winnerId) ? d.winnerId : undefined;
-      return { ...d, values, winnerId };
+      const winnerIds = (d.winnerIds ?? []).filter((id) => validIds.has(id));
+      return { ...d, values, winnerIds: winnerIds.length > 0 ? winnerIds : undefined };
     });
     onChange({ ...data, options: newOptions, dimensions: syncedDimensions });
   }
